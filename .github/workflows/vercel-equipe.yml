@@ -1,0 +1,80 @@
+name: Publicar na Vercel o main do time
+
+# A Vercel (projeto flashclip) não está ligada ao GitHub. Este workflow olha o
+# main do PedroNapp/Paradigmas a cada 10 minutos e, quando aparece commit novo,
+# publica a pasta FlashClip em produção (https://flashclip-lovat.vercel.app).
+# Precisa do segredo VERCEL_TOKEN neste repo, com um token da conta da Vercel.
+
+on:
+  schedule:
+    - cron: '4,14,24,34,44,54 * * * *'
+  workflow_dispatch:
+    inputs:
+      forcar:
+        description: Publicar mesmo se a produção já estiver nesse commit
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-flashclip
+  cancel-in-progress: false
+
+env:
+  REPO_DO_TIME: https://github.com/PedroNapp/Paradigmas.git
+  VERCEL_ORG_ID: team_pWbiSX6gDtF8H08FiEi8s0S0
+  VERCEL_PROJECT_ID: prj_FpCbgnadU2xs8nY1iVqiqBgtE0op
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # O commit publicado fica guardado no deploy (meta equipeSha), então o
+      # mesmo commit não é publicado de novo a cada 10 minutos.
+      - name: Compara o main do time com a produção
+        id: comparar
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          FORCAR: ${{ inputs.forcar }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::warning::Falta o segredo VERCEL_TOKEN neste repo. Nada foi publicado."
+            echo "publicar=nao" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          novo=$(git ls-remote "$REPO_DO_TIME" refs/heads/main | cut -f1)
+          if [ -z "$novo" ]; then
+            echo "::error::Não consegui ler o main do time."
+            exit 1
+          fi
+          resposta=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID&target=production&state=READY&limit=1") || {
+            echo "::error::A Vercel recusou o token. Confira o segredo VERCEL_TOKEN."
+            exit 1
+          }
+          atual=$(printf '%s' "$resposta" | jq -r '.deployments[0].meta.equipeSha // ""')
+          echo "Main do time: $novo"
+          echo "Em produção: ${atual:-sem registro}"
+          if [ "$novo" = "$atual" ] && [ "$FORCAR" != "true" ]; then
+            echo "A produção já está no main do time."
+            echo "publicar=nao" >> "$GITHUB_OUTPUT"
+          else
+            echo "publicar=sim" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Baixa o main do time
+        if: steps.comparar.outputs.publicar == 'sim'
+        run: git clone --quiet --depth 1 --no-tags --branch main "$REPO_DO_TIME" time
+
+      - name: Publica a pasta FlashClip em produção
+        if: steps.comparar.outputs.publicar == 'sim'
+        working-directory: time/FlashClip
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          npx --yes vercel@65.12.1 deploy --prod --yes --token "$VERCEL_TOKEN" --meta "equipeSha=$sha"
+          echo "Publicado em produção o commit $sha do main do time: $(git log -1 --format=%s)" >> "$GITHUB_STEP_SUMMARY"
