@@ -12,19 +12,20 @@
 
     <link rel="stylesheet" href="../css/sobre.css" />
 
-    <link rel="stylesheet" href="../css/rodape.css" />
+    <link rel="stylesheet" href="../css/rodape.css?v=2" />
     <link rel="stylesheet" href="../vendor/lenis/lenis.css" />
-    <link rel="stylesheet" href="../css/experiencia.css?v=6" />
+    <link rel="stylesheet" href="../css/experiencia.css?v=11" />
   </head>
 
   <body>
+    <a class="fc-skip" href="#conteudo">Pular para o conteúdo</a>
     <!-- =========================
          NAVBAR
     ========================== -->
 
     <header class="navbar">
       <a href="../index.html" class="logo">
-        <img src="../imagens/logoFlash.png" alt="FlashClip" />
+        <img src="../imagens/logoFlash.webp" alt="FlashClip" />
       </a>
 
       <nav class="nav-links">
@@ -94,11 +95,11 @@
          CONTEÚDO
     ========================== -->
 
-    <main class="sobre">
+    <main class="sobre" id="conteudo">
       <!-- INTRO -->
 
       <section class="sobre-intro">
-        <h1>SOBRE O FLASHCLIP</h1>
+        <h1>Sobre o FlashClip</h1>
 
         <p>Conectando estudantes ao mundo da programação</p>
       </section>
@@ -343,21 +344,19 @@
         <p>© 2026/2 FlashClip. Todos os direitos reservados.</p>
 
         <div class="contatos">
-          <a href="#"> Instagram </a>
-
-          <a href="#"> Facebook </a>
-
-          <a href="mailto:contato@flashclip.com"> E-mail </a>
+          <a href="./contato.html"> Contato </a>
+          <a href="./faq.html"> FAQ </a>
+          <a href="mailto:contato.flashclip@gmail.com"> E-mail </a>
         </div>
       </div>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script type = "module" src="../js/auth.js"></script>
-    <script type = "module" src="../js/cabecalho.js?v=2"></script>
-    <div class="fc-audio-dock" role="group" aria-label="Controles de áudio"><button type="button" data-audio-music aria-pressed="true">♫ Música ligada</button><button type="button" data-audio-effects aria-pressed="true">♪ Efeitos ligados</button></div>
+    <script type = "module" src="../js/cabecalho.js?v=3"></script>
+    <div class="fc-audio-dock" role="region" aria-label="Controles de áudio"><button type="button" data-audio-music aria-pressed="true">♫ Música ligada</button><button type="button" data-audio-effects aria-pressed="true">♪ Efeitos ligados</button></div>
     <script defer src="../vendor/lenis/lenis.min.js"></script>
-    <script defer src="../js/experiencia.js?v=7"></script>
-    <script defer src="../js/audio-natal.js?v=audio-6"></script>
+    <script defer src="../js/experiencia.js?v=11"></script>
+    <script defer src="../js/audio-natal.js?v=audio-10"></script>
   </body>
 </html>

@@ -1,4 +1,6 @@
 import { carregarDadosInstrutores } from "./dados.js";
+import { escaparHTML } from "./seguranca.js";
+import { prepararImagemMinistrante, atributosFallbackImagem } from "./imagens-ministrantes.js?v=1";
 
 const listaInstrutores = document.getElementById("listaInstrutores");
 
@@ -27,8 +29,10 @@ async function carregarInstrutores() {
 
       const nome = ministrante.usuarios?.nome || "Instrutor";
 
-      const foto =
-        ministrante.referenciaFoto || "../imagens/usuario-padrao.png";
+      const foto = prepararImagemMinistrante(
+        ministrante.referenciaFoto,
+        "../imagens/"
+      );
 
       if (!cursos[curso]) {
         cursos[curso] = [];
@@ -70,7 +74,7 @@ async function carregarInstrutores() {
       titulo.innerHTML = `
                     <span>CURSO</span>
                     <h2>
-                        ${curso}
+                        ${escaparHTML(curso)}
                     </h2>
                 `;
 
@@ -97,20 +101,23 @@ async function carregarInstrutores() {
                             <div class="foto-instrutor">
 
                                 <img
-                                    src="${instrutor.foto}"
-                                    alt="${instrutor.nome}"
+                                    src="${escaparHTML(instrutor.foto.src)}"
+                                    ${atributosFallbackImagem(instrutor.foto, "../imagens/usuario-padrao.png")}
+                                    alt="${escaparHTML(instrutor.nome)}"
+                                    width="146"
+                                    height="146"
                                     loading="lazy"
-                                    onerror="this.onerror=null; this.src='../imagens/usuario-padrao.png';"
+                                    decoding="async"
                                  >
 
                             </div>
 
                             <h3>
-                                ${instrutor.nome}
+                                ${escaparHTML(instrutor.nome)}
                             </h3>
 
                             <span class="nome-curso">
-                                ${curso}
+                                ${escaparHTML(curso)}
                             </span>
                         `;
 

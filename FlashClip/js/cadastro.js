@@ -1,4 +1,5 @@
 import { clienteSupabase } from "./supabase.js";
+import { emailNormalizado, LIMITES, textoLimpo } from "./seguranca.js";
 
 // =========================
 // FORMULÁRIO
@@ -110,6 +111,11 @@ function mostrarErro(campo, mensagem) {
   }
 
   mensagemErro.textContent = mensagem;
+
+  // Leitores de tela leem a mensagem junto com o campo.
+  mensagemErro.id = `erro-${campo.id}`;
+  campo.setAttribute("aria-invalid", "true");
+  campo.setAttribute("aria-describedby", mensagemErro.id);
 }
 
 // =========================
@@ -120,6 +126,8 @@ function limparErro(campo) {
   campo.setCustomValidity("");
 
   campo.classList.remove("campo-invalido");
+  campo.removeAttribute("aria-invalid");
+  campo.removeAttribute("aria-describedby");
 
   const containerCampo = campo.closest(".campo") || campo.parentElement;
 
@@ -135,11 +143,17 @@ function limparErro(campo) {
 // =========================
 
 function validarNome() {
-  const valor = nome.value.trim();
+  const valor = textoLimpo(nome.value, Infinity);
 
   // Campo vazio
   if (valor === "") {
     mostrarErro(nome, "Digite seu nome completo.");
+    return false;
+  }
+
+  // Tamanho máximo
+  if (valor.length > LIMITES.nome) {
+    mostrarErro(nome, `O nome pode ter no máximo ${LIMITES.nome} caracteres.`);
     return false;
   }
 
@@ -202,9 +216,23 @@ function validarIdade() {
 // VALIDAR ORIGEM
 // =========================
 
+// As opções do HTML, lidas antes de qualquer alteração pelo navegador.
+const ORIGENS_VALIDAS = new Set(
+  Array.from(origem?.options || [])
+    .map(function (opcao) {
+      return opcao.value;
+    })
+    .filter(Boolean),
+);
+
 function validarOrigem() {
   if (!origem.value) {
     mostrarErro(origem, "Selecione sua origem.");
+    return false;
+  }
+
+  if (!ORIGENS_VALIDAS.has(origem.value)) {
+    mostrarErro(origem, "Selecione uma origem da lista.");
     return false;
   }
 
@@ -227,7 +255,7 @@ function validarEmail() {
     return false;
   }
 
-  if (email.validity.typeMismatch) {
+  if (email.validity.typeMismatch || !emailNormalizado(valor)) {
     mostrarErro(email, "Digite um e-mail válido.");
     return false;
   }
@@ -459,6 +487,12 @@ function validarSenha() {
     return false;
   }
 
+  // Limite do Supabase Auth
+  if (valor.length > LIMITES.senha) {
+    mostrarErro(senha, `A senha pode ter no máximo ${LIMITES.senha} caracteres.`);
+    return false;
+  }
+
   const pendencias = obterPendenciasSenha(valor);
 
   if (pendencias.length > 0) {
@@ -611,6 +645,8 @@ if (formulario) {
     // =========================
 
     if (!validarFormulario()) {
+      // O foco vai para o campo com erro, e o leitor de tela lê o rótulo e a mensagem.
+      formulario.querySelector(".campo-invalido")?.focus();
       return;
     }
 
@@ -618,11 +654,11 @@ if (formulario) {
     // PEGAR DADOS
     // =========================
 
-    const nomeDigitado = nome.value;
+    const nomeDigitado = textoLimpo(nome.value, LIMITES.nome);
     const telefoneDigitado = telefone.value;
     const origemDigitada = origem.value.trim().toLowerCase();
     const idadeDigitada = Number(idade.value);
-    const emailDigitado = email.value.trim().toLowerCase();
+    const emailDigitado = emailNormalizado(email.value);
     const senhaDigitada = senha.value;
 
     // =========================

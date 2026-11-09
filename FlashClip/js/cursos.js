@@ -1,15 +1,12 @@
 // =========================
-// CARREGAR CARDS
+// NOTEBOOK DE CURSOS
 // =========================
+// A página de Cursos começa no modo simples; o notebook abre ao escolher Avançado.
 
-import { carregarCursos } from "./carregarCardsCursos.js?v=ready-5";
+import { montarNotebookCursos } from "./notebookCursos.js?v=8";
 
-const listaCursos = document.getElementById("listaCursos");
-
-carregarCursos(
-  listaCursos,
-  null,
-  "./matricula.html",
-  "./login.html",
-  "../imagens/",
-);
+montarNotebookCursos(document.getElementById("notebookCursos"), {
+  caminhoLogin: "./login.html",
+  caminhoInscricoes: "./inscricoes.html",
+  caminhoImagens: "../imagens/",
+});

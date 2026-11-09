@@ -1,8 +1,11 @@
-/* Botões magnéticos e transição entre telas, compartilhados por todas as páginas. */
+/* Toque, brilho e ímã dos botões, compartilhados por todas as páginas. */
 (() => {
   const calmo = matchMedia('(prefers-reduced-motion: reduce)');
   const mouse = matchMedia('(hover: hover) and (pointer: fine)');
   const botoes = [...document.querySelectorAll('.navbar .inscricoes, .menu-mobile .inscricoes, #botaoUsuario, #botaoUsuarioMobile, .fc-hero-copy .fc-botao-liquido, .botao-login, .botao-cadastro, .botao-confirmar')];
+  // Só o botão do hero é puxado pelo cursor. Entrar, Inscrições e os botões dourados de conta
+  // ficam parados: guardam o toque, o som e o brilho, sem o ímã.
+  const puxados = new Set(document.querySelectorAll('.fc-hero-copy .fc-botao-liquido'));
   const desvio = new WeakMap();
   let cursor = null, quadro = 0;
 
@@ -35,7 +38,7 @@
         const distancia = Math.hypot(ox, oy);
         if (distancia < alcance) {
           const forca = 1 - distancia / alcance;
-          dx = ox * .45 * forca; dy = oy * .55 * forca;
+          if (puxados.has(botao)) { dx = ox * .45 * forca; dy = oy * .55 * forca; }
           botao.style.setProperty('--fc-gx', `${cursor.x - (caixa.left - dx0)}px`);
           botao.style.setProperty('--fc-gy', `${cursor.y - (caixa.top - dy0)}px`);
         }
@@ -54,6 +57,38 @@
   document.addEventListener('mouseout', evento => { if (!evento.relatedTarget) { cursor = null; pedirQuadro(); } });
   window.addEventListener('blur', () => { cursor = null; pedirQuadro(); });
 
+  // "Pular para o conteúdo": além de rolar, leva o foco do teclado para o conteúdo.
+  document.querySelector('.fc-skip')?.addEventListener('click', () => {
+    const alvo = document.getElementById('conteudo');
+    if (!alvo) return;
+    if (!alvo.hasAttribute('tabindex')) alvo.setAttribute('tabindex', '-1');
+    alvo.focus({ preventScroll: true });
+  });
+
+  // Os controles de música ficam num botão redondo com o ícone; o clique abre os dois
+  // ajustes e um clique fora (ou Esc) fecha. O ícone fica riscado com a música desligada.
+  const doca = document.querySelector('.fc-audio-dock');
+  if (doca) {
+    const abrir = document.createElement('button');
+    abrir.type = 'button';
+    abrir.className = 'fc-audio-abrir';
+    abrir.setAttribute('aria-expanded', 'false');
+    abrir.setAttribute('aria-label', 'Controles de áudio');
+    abrir.textContent = '♫';
+    doca.prepend(abrir);
+    const fechar = () => { doca.classList.remove('fc-audio-aberta'); abrir.setAttribute('aria-expanded', 'false'); };
+    abrir.addEventListener('click', () => {
+      const aberta = doca.classList.toggle('fc-audio-aberta');
+      abrir.setAttribute('aria-expanded', String(aberta));
+    });
+    document.addEventListener('click', evento => { if (!doca.contains(evento.target)) fechar(); });
+    document.addEventListener('keydown', evento => { if (evento.key === 'Escape') fechar(); });
+    const musica = doca.querySelector('[data-audio-music]');
+    const marcar = () => doca.classList.toggle('fc-audio-mudo', musica?.getAttribute('aria-pressed') === 'false');
+    if (musica) new MutationObserver(marcar).observe(musica, { attributes: true, attributeFilter: ['aria-pressed'] });
+    marcar();
+  }
+
   // Rolagem suave da roda do mouse (Lenis, em vendor/lenis). Toque e teclado continuam nativos,
   // e quem pede menos movimento no sistema fica com a rolagem normal.
   if (window.Lenis && !calmo.matches) {
@@ -69,26 +104,4 @@
       prevent: node => node.classList?.contains('menu-mobile'),
     });
   }
-
-  // Dentro da moldura (app.html) a troca de tela não recarrega a página e a moldura faz a transição.
-  let naMoldura = false;
-  try { naMoldura = window.parent !== window && !!window.parent.FCMoldura; } catch {}
-  // Chrome, Edge e Safari 18+ fazem a transição pelo CSS (@view-transition). Nos outros,
-  // a página sai com a mesma animação antes de navegar e a próxima entra pelo CSS.
-  if (naMoldura || 'onpagereveal' in window || calmo.matches) return;
-  document.documentElement.classList.add('fc-sem-vt');
-  document.addEventListener('click', evento => {
-    const link = evento.target.closest?.('a[href]');
-    if (!link || evento.defaultPrevented || evento.button !== 0 || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey) return;
-    if ((link.target && link.target !== '_self') || link.hasAttribute('download')) return;
-    const destino = new URL(link.href, location.href);
-    if (destino.origin !== location.origin) return;
-    // Âncoras na mesma página continuam com a rolagem suave de sempre.
-    if (destino.pathname === location.pathname && destino.search === location.search && destino.hash) return;
-    evento.preventDefault();
-    document.documentElement.classList.add('fc-saindo');
-    setTimeout(() => { location.href = destino.href; }, 280);
-  });
-  // Voltar pelo histórico (bfcache) não pode devolver a página ainda apagada.
-  window.addEventListener('pageshow', () => document.documentElement.classList.remove('fc-saindo'));
 })();
